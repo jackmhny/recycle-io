@@ -13,9 +13,9 @@ export async function startGame({ canvas, scoreEl, timeEl, tooltip }) {
   scene.background = new THREE.Color('#dff1ff');
 
   const camera = new THREE.PerspectiveCamera(60, WIDTH / HEIGHT, 0.1, 1000);
-  camera.position.set(0, 18, 20);
+  camera.position.set(0, 12, 14);
   camera.lookAt(0, 0, 0);
-  const camOffset = new THREE.Vector3(0, 18, 20);
+  const camOffset = new THREE.Vector3(0, 12, 14);
 
   scene.add(new THREE.DirectionalLight(0xffffff, 1.0));
   scene.add(new THREE.AmbientLight(0xffffff, 0.6));
@@ -26,7 +26,7 @@ export async function startGame({ canvas, scoreEl, timeEl, tooltip }) {
   const groundSize = 120;
   const ITEM_SCALE = 1.5;
   const growthPerItem = 0.035;
-  const speed = 68;
+  const speed = 180;
   const friction = 0.85;
 
   // Ground
@@ -38,27 +38,7 @@ export async function startGame({ canvas, scoreEl, timeEl, tooltip }) {
   ground.rotation.x = -Math.PI / 2;
   scene.add(ground);
 
-  // Scatter patches
-  const patchTextures = await Promise.all([
-    loader.loadTexOrFallback('assets/tiles/grass_0.png', '#9ae66e', 'GRASS'),
-    loader.loadTexOrFallback('assets/tiles/concrete_0.png', '#cccccc', 'CONC')
-  ]);
-  const createPatch = (tex, size, x, z) => {
-    const m = new THREE.MeshBasicMaterial({ map: tex, transparent: true });
-    const g = new THREE.PlaneGeometry(size, size);
-    const mesh = new THREE.Mesh(g, m);
-    mesh.rotation.x = -Math.PI/2;
-    mesh.position.set(x, 0.01, z);
-    mesh.renderOrder = 1;
-    scene.add(mesh);
-  };
-  for (let i = 0; i < 12; i++) {
-    const tex = patchTextures[i % patchTextures.length];
-    const size = 6 + Math.random() * 8;
-    const x = (Math.random() - 0.5) * (groundSize - 20);
-    const z = (Math.random() - 0.5) * (groundSize - 20);
-    createPatch(tex, size, x, z);
-  }
+  // Single grass ground to avoid overlapping planes
 
   // Buildings: glass/metal/brick/stucco/houses
   const buildings = [];
@@ -287,7 +267,7 @@ export async function startGame({ canvas, scoreEl, timeEl, tooltip }) {
       const dz = t.position.z - holeGroup.position.z;
       const dist = Math.hypot(dx, dz);
       const size = t.userData.size;
-      const absorbable = size <= absorbR * 0.6;
+      const absorbable = size <= absorbR * 0.85;
       if (running && absorbable && dist < absorbR) {
         t.userData.absorbing = true;
         t.userData.absorbY = t.position.y;
@@ -320,8 +300,8 @@ export async function startGame({ canvas, scoreEl, timeEl, tooltip }) {
       const dz = b.position.z - holeGroup.position.z;
       const dist = Math.hypot(dx, dz);
       const footprint = Math.max(b.userData.w, b.userData.d) * 0.6;
-      const heightGate = b.userData.h <= holeRadius * 4.0;
-      const absorbable = (holeRadius >= footprint * 0.5) && heightGate;
+      const heightGate = b.userData.h <= holeRadius * 5.0;
+      const absorbable = (holeRadius >= footprint * 0.4) && heightGate;
       if (running && absorbable && dist < holeRadius) {
         b.userData.absorbing = true;
         b.userData.absorbY = b.position.y;

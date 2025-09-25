@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Recycle Hole</title>
+    <link rel="stylesheet" href="style.css" />
+    <script type="module" defer src="src/main.js"></script>
+  </head>
+  <body>
+    <div id="hud">
+      <div class="hud-left">
+        <div class="hud-line"><span class="label">Time</span><span id="time">60</span></div>
+        <div class="hud-line"><span class="label">Score</span><span id="score">0</span></div>
+      </div>
+      <div class="hud-right">
+        <button id="restart">Restart</button>
+      </div>
+    </div>
+    <div id="tooltip">Absorb trash to grow your hole!</div>
+    <canvas id="game"></canvas>
+  </body>
+  </html>

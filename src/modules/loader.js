@@ -21,11 +21,14 @@ export class TextureLoaderEx {
   }
 
   async loadTexOrFallback(path, color, label) {
-    const tex = await this.tryLoadTex(path);
+    const webp = path.endsWith('.png') ? path.replace(/\.png$/, '.webp') : path;
+    let tex = await this.tryLoadTex(webp);
+    if (!tex) tex = await this.tryLoadTex(path);
     if (tex) return tex;
     return makeFallbackTexture(color, label);
   }
 }
+
 
 export function makeFallbackTexture(colorHex, label) {
   const size = 256;

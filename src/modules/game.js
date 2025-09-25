@@ -26,11 +26,11 @@ export async function startGame({ canvas, scoreEl, timeEl, tooltip }) {
   const groundSize = 120;
   const ITEM_SCALE = 1.5;
   const growthPerItem = 0.035;
-  const speed = 34;
+  const speed = 68;
   const friction = 0.85;
 
   // Ground
-  const tileTexture = await loader.loadTexOrFallback('assets/tiles/asphalt_0.png', '#b9b9b9', 'ASPHALT');
+  const tileTexture = await loader.loadTexOrFallback('assets/tiles/grass_0.png', '#9ae66e', 'GRASS');
   tileTexture.wrapS = tileTexture.wrapT = THREE.RepeatWrapping;
   tileTexture.repeat.set(12, 12);
   const groundMat = new THREE.MeshLambertMaterial({ map: tileTexture });
@@ -112,12 +112,12 @@ export async function startGame({ canvas, scoreEl, timeEl, tooltip }) {
     roof.position.set(x, h + roofH/2, z);
     scene.add(roof);
   }
-  for (let i = -6; i <= 6; i++) {
+  for (let i = -4; i <= 4; i++) {
     const x = i * 9;
     addSkyscraper(x, -edge - 6 - Math.random()*8);
     addSkyscraper(x, edge + 6 + Math.random()*8);
   }
-  for (let i = -6; i <= 6; i++) {
+  for (let i = -4; i <= 4; i++) {
     const z = i * 9;
     addSkyscraper(-edge - 6 - Math.random()*8, z);
     addSkyscraper(edge + 6 + Math.random()*8, z);
@@ -125,25 +125,27 @@ export async function startGame({ canvas, scoreEl, timeEl, tooltip }) {
   for (let gx = -3; gx <= 3; gx++) {
     for (let gz = -3; gz <= 3; gz++) {
       if (Math.abs(gx) <= 1 && Math.abs(gz) <= 1) continue;
-      if (Math.random() < 0.35) continue;
+      if (Math.random() < 0.55) continue;
       const x = gx * 15 + (Math.random()*6 - 3);
       const z = gz * 15 + (Math.random()*6 - 3);
       (Math.random() < 0.5 ? addHouse : addSkyscraper)(x, z);
     }
   }
 
-  // Player hole
+  // Player hole: froghole image as decal
   const holeGroup = new THREE.Group();
   scene.add(holeGroup);
   let holeRadius = 2.0;
-  let holeDisc = new THREE.Mesh(new THREE.CircleGeometry(holeRadius - 0.2, 64), new THREE.MeshBasicMaterial({ color: 0x111111 }));
-  holeDisc.rotation.x = -Math.PI / 2;
-  holeDisc.position.y = 0.02;
-  holeGroup.add(holeDisc);
-  let ring = new THREE.Mesh(new THREE.RingGeometry(holeRadius - 0.2, holeRadius + 0.2, 64), new THREE.MeshBasicMaterial({ color: 0x333333 }));
-  ring.rotation.x = -Math.PI/2;
-  ring.position.y = 0.021;
-  holeGroup.add(ring);
+  let holeTex = await loader.tryLoadTex('assets/player/froghole.webp');
+  if (!holeTex) holeTex = await loader.tryLoadTex('/froghole.png');
+  if (!holeTex) holeTex = new THREE.CanvasTexture(document.createElement('canvas'));
+  const holeMat = new THREE.MeshBasicMaterial({ map: holeTex, transparent: true });
+  const holeGeo = new THREE.PlaneGeometry(1, 1);
+  let holeMesh = new THREE.Mesh(holeGeo, holeMat);
+  holeMesh.rotation.x = -Math.PI / 2;
+  holeMesh.position.y = 0.021;
+  holeMesh.scale.set(holeRadius * 2, holeRadius * 2, 1);
+  holeGroup.add(holeMesh);
 
   // Trash spawning
   const categories = [
@@ -271,17 +273,7 @@ export async function startGame({ canvas, scoreEl, timeEl, tooltip }) {
             if (newR > 6.0) newR = 6.0;
             if (newR !== holeRadius) {
               holeRadius = newR;
-              holeDisc.geometry.dispose();
-              ring.geometry.dispose();
-              holeDisc = new THREE.Mesh(new THREE.CircleGeometry(holeRadius - 0.2, 64), new THREE.MeshBasicMaterial({ color: 0x111111 }));
-              holeDisc.rotation.x = -Math.PI / 2;
-              holeDisc.position.y = 0.02;
-              ring = new THREE.Mesh(new THREE.RingGeometry(holeRadius - 0.2, holeRadius + 0.2, 64), new THREE.MeshBasicMaterial({ color: 0x333333 }));
-              ring.rotation.x = -Math.PI/2;
-              ring.position.y = 0.021;
-              holeGroup.clear();
-              holeGroup.add(holeDisc);
-              holeGroup.add(ring);
+              holeMesh.scale.set(holeRadius * 2, holeRadius * 2, 1);
             }
             score += Math.max(1, Math.round(10 * t.userData.size));
           }
@@ -314,17 +306,7 @@ export async function startGame({ canvas, scoreEl, timeEl, tooltip }) {
             if (newR > 8.0) newR = 8.0;
             if (newR !== holeRadius) {
               holeRadius = newR;
-              holeDisc.geometry.dispose();
-              ring.geometry.dispose();
-              holeDisc = new THREE.Mesh(new THREE.CircleGeometry(holeRadius - 0.2, 64), new THREE.MeshBasicMaterial({ color: 0x111111 }));
-              holeDisc.rotation.x = -Math.PI / 2;
-              holeDisc.position.y = 0.02;
-              ring = new THREE.Mesh(new THREE.RingGeometry(holeRadius - 0.2, holeRadius + 0.2, 64), new THREE.MeshBasicMaterial({ color: 0x333333 }));
-              ring.rotation.x = -Math.PI/2;
-              ring.position.y = 0.021;
-              holeGroup.clear();
-              holeGroup.add(holeDisc);
-              holeGroup.add(ring);
+              holeMesh.scale.set(holeRadius * 2, holeRadius * 2, 1);
             }
             score += Math.round(50 + Math.max(b.userData.w, b.userData.d));
           }

@@ -28,3 +28,16 @@ Notes
 - If assets are missing, the game uses simple colored placeholders.
 - The visual style prompt used: bright, flat 2D, kid-friendly, bold outlines, no humans.
 
+
+
+Building textures
+- To add variety (glass, metal, brick, stucco, bright painted houses):
+  - Ensure `OPENAI_API_KEY` is set
+  - Run: `python3 scripts/generate_building_assets.py --count 5`
+    - Creates per‑type folders:
+      - `assets/tiles/buildings/glass/glass_{0..4}.png`
+      - `assets/tiles/buildings/metal/metal_{0..4}.png`
+      - `assets/tiles/buildings/brick/brick_{0..4}.png`
+      - `assets/tiles/buildings/stucco/stucco_{0..4}.png`
+      - `assets/tiles/buildings/house_paint/house_paint_{0..4}.png`
+  - Increase variety with `--count 8` or higher as desired.

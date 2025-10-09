@@ -30,15 +30,36 @@ export async function startGame({ canvas, scoreEl, timeEl, tooltip }) {
   const friction = 0.85;
 
   // Ground
-  const tileTexture = await loader.loadTexOrFallback('assets/tiles/grass_0.png', '#9ae66e', 'GRASS');
-  tileTexture.wrapS = tileTexture.wrapT = THREE.RepeatWrapping;
-  tileTexture.repeat.set(12, 12);
-  const groundMat = new THREE.MeshLambertMaterial({ map: tileTexture });
-  const ground = new THREE.Mesh(new THREE.PlaneGeometry(groundSize, groundSize), groundMat);
-  ground.rotation.x = -Math.PI / 2;
-  scene.add(ground);
+  const groundTiles = [];
+  const groundTilePaths = [
+    'assets/tiles/grass_0.png',
+    'assets/tiles/grass_1.png',
+    'assets/tiles/asphalt_0.png',
+    'assets/tiles/asphalt_1.png',
+    'assets/tiles/concrete_0.png',
+    'assets/tiles/concrete_1.png',
+  ];
+  for (const path of groundTilePaths) {
+    const tex = await loader.loadTexOrFallback(path, '#9ae66e', 'TILE');
+    groundTiles.push(tex);
+  }
 
-  // Single grass ground to avoid overlapping planes
+  const ground = new THREE.Group();
+  const gridSize = 12;
+  const tileSize = 10;
+  // const groundSize = gridSize * tileSize; // This was the bug - groundSize is already defined
+  for (let i = 0; i < gridSize; i++) {
+    for (let j = 0; j < gridSize; j++) {
+      const tileTexture = groundTiles[Math.floor(Math.random() * groundTiles.length)];
+      const groundMat = new THREE.MeshLambertMaterial({ map: tileTexture });
+      const plane = new THREE.Mesh(new THREE.PlaneGeometry(tileSize, tileSize), groundMat);
+      plane.rotation.x = -Math.PI / 2;
+      plane.position.x = (i - gridSize / 2) * tileSize + tileSize / 2;
+      plane.position.z = (j - gridSize / 2) * tileSize + tileSize / 2;
+      ground.add(plane);
+    }
+  }
+  scene.add(ground);
 
   // Buildings: glass/metal/brick/stucco/houses
   const buildings = [];

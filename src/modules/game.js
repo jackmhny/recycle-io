@@ -112,20 +112,49 @@ export async function startGame({ canvas, scoreEl, timeEl, tooltip }) {
     }
   }
 
-  // Player hole: froghole image as decal
+  // Player hole: trashcan and recycle bin images as decals
   const holeGroup = new THREE.Group();
   scene.add(holeGroup);
   let holeRadius = 2.0;
-  let holeTex = await loader.tryLoadTex('assets/player/froghole.webp');
-  if (!holeTex) holeTex = await loader.tryLoadTex('/froghole.png');
-  if (!holeTex) holeTex = new THREE.CanvasTexture(document.createElement('canvas'));
-  const holeMat = new THREE.MeshBasicMaterial({ map: holeTex, transparent: true });
+
+  const trashcanTex = await loader.tryLoadTex('assets/player/trashcan_hole.webp');
+  const recyclecanTex = await loader.tryLoadTex('assets/player/recyclecan_hole.webp');
+
   const holeGeo = new THREE.PlaneGeometry(1, 1);
-  let holeMesh = new THREE.Mesh(holeGeo, holeMat);
-  holeMesh.rotation.x = -Math.PI / 2;
-  holeMesh.position.y = 0.021;
-  holeMesh.scale.set(holeRadius * 2, holeRadius * 2, 1);
-  holeGroup.add(holeMesh);
+
+  const trashcanMat = new THREE.MeshBasicMaterial({ map: trashcanTex, transparent: true });
+  const trashcanMesh = new THREE.Mesh(holeGeo, trashcanMat);
+  trashcanMesh.rotation.x = -Math.PI / 2;
+  trashcanMesh.position.y = 0.021;
+  trashcanMesh.scale.set(holeRadius * 2, holeRadius * 2, 1);
+  holeGroup.add(trashcanMesh);
+
+  const recyclecanMat = new THREE.MeshBasicMaterial({ map: recyclecanTex, transparent: true });
+  const recyclecanMesh = new THREE.Mesh(holeGeo, recyclecanMat);
+  recyclecanMesh.rotation.x = -Math.PI / 2;
+  recyclecanMesh.position.y = 0.021;
+  recyclecanMesh.scale.set(holeRadius * 2, holeRadius * 2, 1);
+  recyclecanMesh.visible = false;
+  holeGroup.add(recyclecanMesh);
+
+  let activeCharacter = 'trashcan';
+  let holeMesh = trashcanMesh;
+
+  window.addEventListener('keydown', (e) => {
+    if (e.key === ' ') {
+      if (activeCharacter === 'trashcan') {
+        trashcanMesh.visible = false;
+        recyclecanMesh.visible = true;
+        holeMesh = recyclecanMesh;
+        activeCharacter = 'recyclecan';
+      } else {
+        trashcanMesh.visible = true;
+        recyclecanMesh.visible = false;
+        holeMesh = trashcanMesh;
+        activeCharacter = 'trashcan';
+      }
+    }
+  });
 
   // Trash spawning
   const categories = [
@@ -311,11 +340,13 @@ export async function startGame({ canvas, scoreEl, timeEl, tooltip }) {
     renderer.render(scene, camera);
     requestAnimationFrame(tick);
   }
-  requestAnimationFrame(tick);
-
-  if (tooltip) setTimeout(() => tooltip.remove(), 4000);
+  function run() {
+    requestAnimationFrame(tick);
+    if (tooltip) setTimeout(() => tooltip.remove(), 4000);
+  }
 
   return {
+    run,
     restart() { window.location.reload(); }
   };
 }

@@ -6,9 +6,14 @@ import { startGame } from './modules/game.js';
   const timeEl = document.getElementById('time');
   const restartBtn = document.getElementById('restart');
   const tooltip = document.getElementById('tooltip');
+  const startScreen = document.getElementById('start-screen');
+  const startButton = document.getElementById('start-button');
 
-  const game = await startGame({ canvas, scoreEl, timeEl, tooltip });
-
-  restartBtn.addEventListener('click', () => game.restart());
+  startButton.addEventListener('click', async () => {
+    startScreen.style.display = 'none';
+    const game = await startGame({ canvas, scoreEl, timeEl, tooltip });
+    game.run();
+    restartBtn.addEventListener('click', () => game.restart());
+  });
 })();
 

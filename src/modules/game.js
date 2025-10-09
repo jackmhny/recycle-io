@@ -140,6 +140,7 @@ export async function startGame({ canvas, scoreEl, timeEl, tooltip }) {
 
   const trashcanTex = await loader.tryLoadTex('assets/player/trashcan_hole.webp');
   const recyclecanTex = await loader.tryLoadTex('assets/player/recyclecan_hole.webp');
+  const organicbinTex = await loader.tryLoadTex('assets/player/organicbin.webp');
 
   const holeGeo = new THREE.PlaneGeometry(1, 1);
 
@@ -158,19 +159,33 @@ export async function startGame({ canvas, scoreEl, timeEl, tooltip }) {
   recyclecanMesh.visible = false;
   holeGroup.add(recyclecanMesh);
 
+  const organicbinMat = new THREE.MeshBasicMaterial({ map: organicbinTex, transparent: true });
+  const organicbinMesh = new THREE.Mesh(holeGeo, organicbinMat);
+  organicbinMesh.rotation.x = -Math.PI / 2;
+  organicbinMesh.position.y = 0.021;
+  organicbinMesh.scale.set(holeRadius * 2, holeRadius * 2, 1);
+  organicbinMesh.visible = false;
+  holeGroup.add(organicbinMesh);
+
   let activeCharacter = 'trashcan';
   let holeMesh = trashcanMesh;
 
   window.addEventListener('keydown', (e) => {
     if (e.key === ' ') {
+      trashcanMesh.visible = false;
+      recyclecanMesh.visible = false;
+      organicbinMesh.visible = false;
+
       if (activeCharacter === 'trashcan') {
-        trashcanMesh.visible = false;
         recyclecanMesh.visible = true;
         holeMesh = recyclecanMesh;
         activeCharacter = 'recyclecan';
+      } else if (activeCharacter === 'recyclecan') {
+        organicbinMesh.visible = true;
+        holeMesh = organicbinMesh;
+        activeCharacter = 'organicbin';
       } else {
         trashcanMesh.visible = true;
-        recyclecanMesh.visible = false;
         holeMesh = trashcanMesh;
         activeCharacter = 'trashcan';
       }
@@ -217,6 +232,33 @@ export async function startGame({ canvas, scoreEl, timeEl, tooltip }) {
       scene.add(m);
       trash.push(m);
     }
+  }
+
+  // Leaky Faucets
+  const faucets = [];
+  const numFaucets = 5;
+  const faucetTex = await loader.loadTexOrFallback('assets/interactables/faucet.png', '#cccccc', 'FAUCET');
+
+  for (let i = 0; i < numFaucets; i++) {
+    const faucetMat = new THREE.MeshBasicMaterial({ map: faucetTex, transparent: true });
+    const faucetGeo = new THREE.PlaneGeometry(2, 2);
+    const faucet = new THREE.Mesh(faucetGeo, faucetMat);
+    faucet.rotation.x = -Math.PI / 2;
+    const x = (Math.random() - 0.5) * (spawnArea * 1.8);
+    const z = (Math.random() - 0.5) * (spawnArea * 1.8);
+    faucet.position.set(x, 0.03, z);
+    faucet.userData = { leaking: true };
+    scene.add(faucet);
+
+    const puddleGeo = new THREE.CircleGeometry(1, 32);
+    const puddleMat = new THREE.MeshBasicMaterial({ color: 0x4488ff, transparent: true, opacity: 0.6 });
+    const puddle = new THREE.Mesh(puddleGeo, puddleMat);
+    puddle.rotation.x = -Math.PI / 2;
+    puddle.position.set(x, 0.01, z);
+    puddle.scale.set(0.01, 0.01, 0.01); // Start very small
+    scene.add(puddle);
+
+    faucets.push({ faucet, puddle });
   }
 
   // Input & movement state
@@ -355,6 +397,32 @@ export async function startGame({ canvas, scoreEl, timeEl, tooltip }) {
       if (running && absorbable && dist < holeRadius) {
         b.userData.absorbing = true;
         b.userData.absorbY = b.position.y;
+      }
+    }
+
+    // Faucet logic
+    for (const { faucet, puddle } of faucets) {
+      if (faucet.userData.leaking) {
+        // Grow the puddle
+        const newScale = puddle.scale.x + 0.1 * dt; // Grow rate
+        puddle.scale.set(newScale, newScale, newScale);
+
+        // Check for player interaction
+        const dx = faucet.position.x - holeGroup.position.x;
+        const dz = faucet.position.z - holeGroup.position.z;
+        const dist = Math.hypot(dx, dz);
+
+        if (dist < holeRadius) { // Player is close enough
+          faucet.userData.leaking = false;
+          // Make faucet grayscale by tinting it
+          faucet.material.color.setRGB(0.5, 0.5, 0.5);
+        }
+      } else {
+        // Shrink the puddle if it's not leaking and still visible
+        if (puddle.scale.x > 0.01) {
+          const newScale = puddle.scale.x - 2.0 * dt; // Shrink rate
+          puddle.scale.set(Math.max(0.01, newScale), Math.max(0.01, newScale), Math.max(0.01, newScale));
+        }
       }
     }
 

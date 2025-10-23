@@ -300,7 +300,10 @@ export async function startGame({ canvas, scoreEl, timeEl, tooltip }) {
       if (timeLeft <= 0) {
         timeLeft = 0;
         running = false;
-        if (tooltip) tooltip.textContent = `Time's up! Score: ${score}. Press Restart.`;
+        const gameOverScreen = document.getElementById('game-over-screen');
+        const finalScoreEl = document.getElementById('final-score');
+        finalScoreEl.textContent = score;
+        gameOverScreen.style.display = 'flex';
       }
     }
     updateHUD();
@@ -431,7 +434,6 @@ export async function startGame({ canvas, scoreEl, timeEl, tooltip }) {
   }
   function run() {
     requestAnimationFrame(tick);
-    if (tooltip) setTimeout(() => tooltip.remove(), 4000);
   }
 
   return {

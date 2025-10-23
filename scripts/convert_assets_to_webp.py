@@ -28,8 +28,9 @@ def main():
     ap.add_argument("--delete-png", action="store_true", help="Delete PNGs after successful conversion")
     ap.add_argument("--include-froghole", action="store_true", help="Also convert project-root froghole.png into assets/player/froghole.webp")
     args = ap.parse_args()
-
+    
     root = Path(args.assets_dir)
+    print (root)
     if not root.exists():
         print(f"Assets dir not found: {root}")
         sys.exit(2)

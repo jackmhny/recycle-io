@@ -20,8 +20,41 @@
     </div>
     <canvas id="game"></canvas>
     <div id="start-screen">
-      <h1>Clean up Davis!</h1>
-      <button id="start-button">Start Game</button>
+      <div class="start-panel">
+        <h1>Clean up Davis!</h1>
+        <p class="intro-copy">Roll each bin around town and drop the right items into it. Press the space bar to swap between bins.</p>
+        <div class="bin-guide">
+          <div class="bin-card">
+            <img src="assets/player/trashcan_hole.webp" alt="Black trash bin" class="bin-image">
+            <div class="bin-info">
+              <h2>Trash</h2>
+              <p>Landfill items: chip bags, plastic utensils, broken odds and ends.</p>
+            </div>
+          </div>
+          <div class="bin-card">
+            <img src="assets/player/paperbin.webp" alt="Dark blue paper bin" class="bin-image">
+            <div class="bin-info">
+              <h2>Paper Recycling</h2>
+              <p>Dry paper and cardboard like newspapers, mailers, and cereal boxes.</p>
+            </div>
+          </div>
+          <div class="bin-card">
+            <img src="assets/player/bottlecanbin.webp" alt="Light blue bottles and cans bin" class="bin-image">
+            <div class="bin-info">
+              <h2>Bottles &amp; Cans</h2>
+              <p>Empty glass, metal, and plastic drink containers that can be rinsed.</p>
+            </div>
+          </div>
+          <div class="bin-card">
+            <img src="assets/player/organicbin.webp" alt="Green compost bin" class="bin-image">
+            <div class="bin-info">
+              <h2>Compost</h2>
+              <p>Food scraps and yard waste: fruit peels, coffee grounds, wilted plants.</p>
+            </div>
+          </div>
+        </div>
+        <button id="start-button">Start Game</button>
+      </div>
     </div>
     <div id="game-over-screen" style="display: none;">
       <h1>Game Over</h1>

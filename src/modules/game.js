@@ -30,27 +30,139 @@ export async function startGame({ canvas, scoreEl, timeEl, tooltip }) {
   const friction = 0.85;
 
   // Ground
-  const groundTiles = [];
-  const groundTilePaths = [
-    'assets/tiles/grass_0.png',
-    'assets/tiles/grass_1.png',
-    'assets/tiles/asphalt_0.png',
-    'assets/tiles/asphalt_1.png',
-    'assets/tiles/concrete_0.png',
-    'assets/tiles/concrete_1.png',
-  ];
-  for (const path of groundTilePaths) {
-    const tex = await loader.loadTexOrFallback(path, '#9ae66e', 'TILE');
-    groundTiles.push(tex);
+  async function loadTileSet(paths, fallbackColor, label) {
+    const texs = [];
+    for (const path of paths) {
+      const tex = await loader.loadTexOrFallback(path, fallbackColor, label);
+      texs.push(tex);
+    }
+    return texs;
   }
+
+  const grassTiles = await loadTileSet(
+    ['assets/tiles/grass_0.png', 'assets/tiles/grass_1.png'],
+    '#9ae66e',
+    'GR'
+  );
+  const roadTiles = await loadTileSet(
+    ['assets/tiles/asphalt_0.png', 'assets/tiles/asphalt_1.png'],
+    '#666666',
+    'RD'
+  );
+  const concreteTiles = await loadTileSet(
+    ['assets/tiles/concrete_0.png', 'assets/tiles/concrete_1.png'],
+    '#bdbdbd',
+    'CT'
+  );
 
   const ground = new THREE.Group();
   const gridSize = 12;
   const tileSize = 10;
   // const groundSize = gridSize * tileSize; // This was the bug - groundSize is already defined
+  const tileTypes = Array.from({ length: gridSize }, () => new Array(gridSize).fill('grass'));
+
+  const centerIndex = Math.floor(gridSize / 2);
+  const roadRows = new Set([centerIndex]);
+  const roadCols = new Set([centerIndex]);
+  const desiredRowCount = 2 + Math.floor(Math.random() * 2); // 2-3 rows total
+  const desiredColCount = 2 + Math.floor(Math.random() * 2); // 2-3 cols total
+  while (roadRows.size < desiredRowCount) {
+    roadRows.add(Math.floor(Math.random() * gridSize));
+  }
+  while (roadCols.size < desiredColCount) {
+    roadCols.add(Math.floor(Math.random() * gridSize));
+  }
+
   for (let i = 0; i < gridSize; i++) {
     for (let j = 0; j < gridSize; j++) {
-      const tileTexture = groundTiles[Math.floor(Math.random() * groundTiles.length)];
+      if (roadRows.has(i) || roadCols.has(j)) {
+        tileTypes[i][j] = 'road';
+      }
+    }
+  }
+
+  const directions = [
+    [1, 0],
+    [-1, 0],
+    [0, 1],
+    [0, -1],
+  ];
+
+  for (let i = 0; i < gridSize; i++) {
+    for (let j = 0; j < gridSize; j++) {
+      if (tileTypes[i][j] !== 'grass') continue;
+      const nearRoad = directions.some(([di, dj]) => {
+        const ni = i + di;
+        const nj = j + dj;
+        return ni >= 0 && ni < gridSize && nj >= 0 && nj < gridSize && tileTypes[ni][nj] === 'road';
+      });
+      if (nearRoad && Math.random() < 0.6) {
+        tileTypes[i][j] = 'concrete';
+      }
+    }
+  }
+
+  for (let i = 0; i < gridSize; i++) {
+    for (let j = 0; j < gridSize; j++) {
+      if (tileTypes[i][j] !== 'grass') continue;
+      const nearConcrete = directions.some(([di, dj]) => {
+        const ni = i + di;
+        const nj = j + dj;
+        return ni >= 0 && ni < gridSize && nj >= 0 && nj < gridSize && tileTypes[ni][nj] === 'concrete';
+      });
+      if (nearConcrete && Math.random() < 0.35) {
+        tileTypes[i][j] = 'concrete';
+      }
+    }
+  }
+
+  const grassTextureIndices = Array.from({ length: gridSize }, () => new Array(gridSize).fill(-1));
+  const roadTextureByRow = new Map();
+  const roadTextureByCol = new Map();
+
+  for (let i = 0; i < gridSize; i++) {
+    for (let j = 0; j < gridSize; j++) {
+      let tileTexture = grassTiles[0];
+      const tileType = tileTypes[i][j];
+      if (tileType === 'road') {
+        let idx = -1;
+        if (roadRows.has(i)) {
+          if (!roadTextureByRow.has(i)) {
+            roadTextureByRow.set(i, Math.floor(Math.random() * roadTiles.length));
+          }
+          idx = roadTextureByRow.get(i);
+        }
+        if (!roadRows.has(i) && roadCols.has(j)) {
+          if (!roadTextureByCol.has(j)) {
+            roadTextureByCol.set(j, Math.floor(Math.random() * roadTiles.length));
+          }
+          idx = roadTextureByCol.get(j);
+        }
+        if (idx < 0) idx = Math.floor(Math.random() * roadTiles.length);
+        tileTexture = roadTiles[idx % roadTiles.length];
+      } else if (tileType === 'concrete') {
+        const idx = Math.floor(Math.random() * concreteTiles.length);
+        tileTexture = concreteTiles[idx];
+      } else {
+        let idx = -1;
+        const neighborIndices = [];
+        if (i > 0 && tileTypes[i - 1][j] === 'grass') {
+          const ni = grassTextureIndices[i - 1][j];
+          if (ni >= 0) neighborIndices.push(ni);
+        }
+        if (j > 0 && tileTypes[i][j - 1] === 'grass') {
+          const ni = grassTextureIndices[i][j - 1];
+          if (ni >= 0) neighborIndices.push(ni);
+        }
+        if (neighborIndices.length && Math.random() < 0.75) {
+          idx = neighborIndices[Math.floor(Math.random() * neighborIndices.length)];
+        }
+        if (idx < 0) {
+          idx = Math.floor(Math.random() * grassTiles.length);
+        }
+        grassTextureIndices[i][j] = idx;
+        tileTexture = grassTiles[idx];
+      }
       const groundMat = new THREE.MeshLambertMaterial({ map: tileTexture });
       const plane = new THREE.Mesh(new THREE.PlaneGeometry(tileSize, tileSize), groundMat);
       plane.rotation.x = -Math.PI / 2;
@@ -133,62 +245,52 @@ export async function startGame({ canvas, scoreEl, timeEl, tooltip }) {
     }
   }
 
-  // Player hole: trashcan and recycle bin images as decals
+  // Player hole: decals for each bin type
   const holeGroup = new THREE.Group();
   scene.add(holeGroup);
   let holeRadius = 2.0;
 
-  const trashcanTex = await loader.tryLoadTex('assets/player/trashcan_hole.webp');
-  const recyclecanTex = await loader.tryLoadTex('assets/player/recyclecan_hole.webp');
-  const organicbinTex = await loader.tryLoadTex('assets/player/organicbin.webp');
-
   const holeGeo = new THREE.PlaneGeometry(1, 1);
 
-  const trashcanMat = new THREE.MeshBasicMaterial({ map: trashcanTex, transparent: true });
-  const trashcanMesh = new THREE.Mesh(holeGeo, trashcanMat);
-  trashcanMesh.rotation.x = -Math.PI / 2;
-  trashcanMesh.position.y = 0.021;
-  trashcanMesh.scale.set(holeRadius * 2, holeRadius * 2, 1);
-  holeGroup.add(trashcanMesh);
+  const binDefinitions = [
+    { key: 'trash', path: 'assets/player/trashcan_hole.webp', fallbackColor: '#202020' },
+    { key: 'paper', path: 'assets/player/paperbin.webp', fallbackColor: '#1d3d90' },
+    { key: 'bottles', path: 'assets/player/bottlecanbin.webp', fallbackColor: '#3b8cff' },
+    { key: 'compost', path: 'assets/player/organicbin.webp', fallbackColor: '#217a36' },
+  ];
 
-  const recyclecanMat = new THREE.MeshBasicMaterial({ map: recyclecanTex, transparent: true });
-  const recyclecanMesh = new THREE.Mesh(holeGeo, recyclecanMat);
-  recyclecanMesh.rotation.x = -Math.PI / 2;
-  recyclecanMesh.position.y = 0.021;
-  recyclecanMesh.scale.set(holeRadius * 2, holeRadius * 2, 1);
-  recyclecanMesh.visible = false;
-  holeGroup.add(recyclecanMesh);
+  const binMeshes = [];
+  for (let i = 0; i < binDefinitions.length; i++) {
+    const definition = binDefinitions[i];
+    const tex =
+      (await loader.tryLoadTex(definition.path)) ||
+      makeFallbackTexture(definition.fallbackColor, definition.key.slice(0, 2).toUpperCase());
+    const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true });
+    const mesh = new THREE.Mesh(holeGeo, mat);
+    mesh.rotation.x = -Math.PI / 2;
+    mesh.position.y = 0.021;
+    mesh.scale.set(holeRadius * 2, holeRadius * 2, 1);
+    mesh.visible = i === 0;
+    mesh.userData = { key: definition.key };
+    holeGroup.add(mesh);
+    binMeshes.push(mesh);
+  }
 
-  const organicbinMat = new THREE.MeshBasicMaterial({ map: organicbinTex, transparent: true });
-  const organicbinMesh = new THREE.Mesh(holeGeo, organicbinMat);
-  organicbinMesh.rotation.x = -Math.PI / 2;
-  organicbinMesh.position.y = 0.021;
-  organicbinMesh.scale.set(holeRadius * 2, holeRadius * 2, 1);
-  organicbinMesh.visible = false;
-  holeGroup.add(organicbinMesh);
+  function syncBinScales() {
+    for (const mesh of binMeshes) {
+      mesh.scale.set(holeRadius * 2, holeRadius * 2, 1);
+    }
+  }
 
-  let activeCharacter = 'trashcan';
-  let holeMesh = trashcanMesh;
+  let activeBinIndex = 0;
 
   window.addEventListener('keydown', (e) => {
     if (e.key === ' ') {
-      trashcanMesh.visible = false;
-      recyclecanMesh.visible = false;
-      organicbinMesh.visible = false;
-
-      if (activeCharacter === 'trashcan') {
-        recyclecanMesh.visible = true;
-        holeMesh = recyclecanMesh;
-        activeCharacter = 'recyclecan';
-      } else if (activeCharacter === 'recyclecan') {
-        organicbinMesh.visible = true;
-        holeMesh = organicbinMesh;
-        activeCharacter = 'organicbin';
-      } else {
-        trashcanMesh.visible = true;
-        holeMesh = trashcanMesh;
-        activeCharacter = 'trashcan';
-      }
+      binMeshes[activeBinIndex].visible = false;
+      activeBinIndex = (activeBinIndex + 1) % binMeshes.length;
+      const activeMesh = binMeshes[activeBinIndex];
+      activeMesh.visible = true;
+      syncBinScales();
     }
   });
 
@@ -348,7 +450,7 @@ export async function startGame({ canvas, scoreEl, timeEl, tooltip }) {
             if (newR > 6.0) newR = 6.0;
             if (newR !== holeRadius) {
               holeRadius = newR;
-              holeMesh.scale.set(holeRadius * 2, holeRadius * 2, 1);
+              syncBinScales();
             }
             score += Math.max(1, Math.round(10 * t.userData.size));
           }
@@ -381,7 +483,7 @@ export async function startGame({ canvas, scoreEl, timeEl, tooltip }) {
             if (newR > 8.0) newR = 8.0;
             if (newR !== holeRadius) {
               holeRadius = newR;
-              holeMesh.scale.set(holeRadius * 2, holeRadius * 2, 1);
+              syncBinScales();
             }
             score += Math.round(50 + Math.max(b.userData.w, b.userData.d));
           }

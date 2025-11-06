@@ -1,6 +1,6 @@
 import * as THREE from 'https://unpkg.com/three@0.180.0/build/three.module.js';
 import { TextureLoaderEx, makeFallbackTexture } from './loader.js';
-import { TRASH_CATEGORIES, getTrashTextureCandidates } from './trash-categories.js';
+import { TRASH_CATEGORIES } from './trash-manifest.js';
 
 export async function startGame({ canvas, scoreEl, timeEl, joystickDirection }) {
   const WIDTH = window.innerWidth;
@@ -301,11 +301,21 @@ export async function startGame({ canvas, scoreEl, timeEl, joystickDirection }) 
   const trash = [];
   const spawnArea = groundSize * 0.45;
   const pickTex = async (cat) => {
-    const candidates = getTrashTextureCandidates(cat);
-    for (const base of candidates) {
+    const candidates = cat.textures || [];
+    if (!candidates.length) return null;
+    const indices = [...candidates.keys()];
+    // Shuffle indices to randomize attempts without repeats
+    for (let i = indices.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [indices[i], indices[j]] = [indices[j], indices[i]];
+    }
+    for (const idx of indices) {
+      const path = candidates[idx];
       const tex =
-        (await loader.tryLoadTex(`${base}.webp`)) ||
-        (await loader.tryLoadTex(`${base}.png`));
+        (await loader.tryLoadTex(path)) ||
+        (path.endsWith('.webp')
+          ? await loader.tryLoadTex(path.replace(/\.webp$/, '.png'))
+          : null);
       if (tex) return tex;
     }
     return null;

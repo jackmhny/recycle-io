@@ -187,7 +187,7 @@ html, body {
 .bin-card {
   display: flex;
   gap: 18px;
-  align-items: center;
+  align-items: flex-start;
   background: rgba(240, 248, 255, 0.85);
   border: 4px solid #1f3f60;
   border-radius: 18px;
@@ -201,6 +201,10 @@ html, body {
   object-fit: contain;
 }
 
+.bin-info {
+  flex: 1;
+}
+
 .bin-info h2 {
   font-size: 1.65rem;
   margin: 0;
@@ -210,6 +214,24 @@ html, body {
   margin: 6px 0 0 0;
   font-size: 1.1rem;
   line-height: 1.4;
+}
+
+.bin-examples {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.bin-example {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  border: 2px solid rgba(31, 63, 96, 0.4);
+  background: rgba(255, 255, 255, 0.8);
+  object-fit: contain;
+  padding: 4px;
+  box-shadow: 0 2px 0 rgba(31, 63, 96, 0.2);
 }
 
 #game-over-screen {

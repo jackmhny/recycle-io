@@ -36,9 +36,35 @@ import { startGame } from './modules/game.js';
 
   loadEnvironmentalTips();
 
+  const joystickDirection = { x: 0, y: 0 };
+  const joystickZone = document.getElementById('joystick-zone');
+  const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
+  if (joystickZone && isTouchDevice) {
+    const joystick = nipplejs.create({
+      zone: joystickZone,
+      mode: 'static',
+      position: { left: '50%', top: '50%' },
+      color: 'white',
+    });
+
+    joystick.on('move', (evt, data) => {
+      joystickDirection.x = data.vector.x;
+      joystickDirection.y = data.vector.y;
+    });
+
+    joystick.on('end', () => {
+      joystickDirection.x = 0;
+      joystickDirection.y = 0;
+    });
+  } else if (joystickZone) {
+    joystickZone.style.display = 'none';
+  }
+
+
   startButton.addEventListener('click', async () => {
     startScreen.style.display = 'none';
-    const game = await startGame({ canvas, scoreEl, timeEl });
+    const game = await startGame({ canvas, scoreEl, timeEl, joystickDirection });
     game.run();
     restartBtn.addEventListener('click', () => game.restart());
     gameOverRestartBtn.addEventListener('click', () => game.restart());

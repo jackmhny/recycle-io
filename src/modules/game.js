@@ -1,7 +1,7 @@
 import * as THREE from 'https://unpkg.com/three@0.180.0/build/three.module.js';
 import { TextureLoaderEx, makeFallbackTexture } from './loader.js';
 
-export async function startGame({ canvas, scoreEl, timeEl, tooltip }) {
+export async function startGame({ canvas, scoreEl, timeEl, joystickDirection }) {
   const WIDTH = window.innerWidth;
   const HEIGHT = window.innerHeight;
 
@@ -416,6 +416,12 @@ export async function startGame({ canvas, scoreEl, timeEl, tooltip }) {
     if (keys.has('arrowdown') || keys.has('s')) az += 1;
     if (keys.has('arrowleft') || keys.has('a')) ax -= 1;
     if (keys.has('arrowright') || keys.has('d')) ax += 1;
+
+    if (joystickDirection && (joystickDirection.x !== 0 || joystickDirection.y !== 0)) {
+      ax = joystickDirection.x;
+      az = -joystickDirection.y; // Invert Y-axis for screen coordinates
+    }
+
     const len = Math.hypot(ax, az) || 1;
     ax /= len; az /= len;
     if (running) {

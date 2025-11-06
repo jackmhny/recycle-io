@@ -26,7 +26,7 @@ export async function startGame({ canvas, scoreEl, timeEl, joystickDirection }) 
   const groundSize = 120;
   const ITEM_SCALE = 1.5;
   const growthPerItem = 0.035;
-  const speed = 180;
+  const speed = 120;
   const friction = 0.85;
 
   // Ground

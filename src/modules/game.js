@@ -1,5 +1,6 @@
 import * as THREE from 'https://unpkg.com/three@0.180.0/build/three.module.js';
 import { TextureLoaderEx, makeFallbackTexture } from './loader.js';
+import { TRASH_CATEGORIES, getTrashTextureCandidates } from './trash-categories.js';
 
 export async function startGame({ canvas, scoreEl, timeEl, joystickDirection }) {
   const WIDTH = window.innerWidth;
@@ -26,7 +27,7 @@ export async function startGame({ canvas, scoreEl, timeEl, joystickDirection }) 
   const groundSize = 120;
   const ITEM_SCALE = 1.5;
   const growthPerItem = 0.035;
-  const speed = 120;
+  const speed = 120 * 1.33;
   const friction = 0.85;
 
   // Ground
@@ -295,22 +296,16 @@ export async function startGame({ canvas, scoreEl, timeEl, joystickDirection }) 
   });
 
   // Trash spawning
-  const categories = [
-    { key: 'bottles', baseSize: 0.7 },
-    { key: 'cans', baseSize: 0.6 },
-    { key: 'newspapers', baseSize: 0.9 },
-    { key: 'plastic_bags', baseSize: 1.0 },
-    { key: 'coffee_cups', baseSize: 0.7 },
-    { key: 'food_wrappers', baseSize: 0.8 },
-    { key: 'fruit_peels', baseSize: 0.5 },
-  ];
+  const categories = TRASH_CATEGORIES;
   const maxPerCat = 30;
   const trash = [];
   const spawnArea = groundSize * 0.45;
-  const pickTex = async (pathPrefix) => {
-    for (let i = 0; i < 10; i++) {
-      const p = `${pathPrefix}_${i}.png`;
-      const tex = await loader.tryLoadTex(p);
+  const pickTex = async (cat) => {
+    const candidates = getTrashTextureCandidates(cat);
+    for (const base of candidates) {
+      const tex =
+        (await loader.tryLoadTex(`${base}.webp`)) ||
+        (await loader.tryLoadTex(`${base}.png`));
       if (tex) return tex;
     }
     return null;
@@ -318,8 +313,8 @@ export async function startGame({ canvas, scoreEl, timeEl, joystickDirection }) 
   for (const cat of categories) {
     const count = Math.floor(maxPerCat * (0.7 + Math.random() * 0.6));
     for (let i = 0; i < count; i++) {
-      const pathPrefix = `assets/trash/${cat.key}/${cat.key}`;
-      const tex = (await pickTex(pathPrefix)) || makeFallbackTexture('#ffffff', cat.key.slice(0,3).toUpperCase());
+      const tex =
+        (await pickTex(cat)) || makeFallbackTexture('#ffffff', cat.key.slice(0, 3).toUpperCase());
       tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
       const size = ITEM_SCALE * cat.baseSize * (0.85 + Math.random() * 0.5);
       const geo = new THREE.PlaneGeometry(size, size);
@@ -330,7 +325,13 @@ export async function startGame({ canvas, scoreEl, timeEl, joystickDirection }) 
       const z = (Math.random() - 0.5) * (spawnArea * 2);
       const baseY = 0.03;
       m.position.set(x, baseY, z);
-      m.userData = { size, absorbing: false, absorbY: baseY };
+      m.userData = {
+        size,
+        absorbing: false,
+        absorbY: baseY,
+        category: cat.key,
+        binKey: cat.binKey || 'trash',
+      };
       scene.add(m);
       trash.push(m);
     }
@@ -444,6 +445,7 @@ export async function startGame({ canvas, scoreEl, timeEl, joystickDirection }) 
     }
 
     // Trash absorption
+    const activeBinKey = binMeshes[activeBinIndex]?.userData?.key || 'trash';
     const absorbR = holeRadius;
     for (let i = trash.length - 1; i >= 0; i--) {
       const t = trash[i];
@@ -471,7 +473,8 @@ export async function startGame({ canvas, scoreEl, timeEl, joystickDirection }) 
       const dist = Math.hypot(dx, dz);
       const size = t.userData.size;
       const absorbable = size <= absorbR * 0.85;
-      if (running && absorbable && dist < absorbR) {
+      const matchesBin = !t.userData.binKey || t.userData.binKey === activeBinKey;
+      if (running && absorbable && matchesBin && dist < absorbR) {
         t.userData.absorbing = true;
         t.userData.absorbY = t.position.y;
       }

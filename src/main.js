@@ -17,7 +17,6 @@ import { startGame } from './modules/game.js';
 
   const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
   let audioCuesEnabled = false;
-  let audioContext;
 
   const BIN_LABELS = {
     trash: 'trash',
@@ -26,68 +25,125 @@ import { startGame } from './modules/game.js';
     compost: 'compost',
   };
 
-  function ensureAudioContext() {
-    try {
-      const Ctor = window.AudioContext || window.webkitAudioContext;
-      if (!Ctor) return;
-      if (!audioContext) {
-        audioContext = new Ctor();
+  const AUDIO_PATHS = {
+    bins: {
+      trash: 'assets/audio/bin_trash.wav',
+      paper: 'assets/audio/bin_paper.wav',
+      bottles: 'assets/audio/bin_bottles.wav',
+      compost: 'assets/audio/bin_compost.wav',
+    },
+    pickup: 'assets/audio/pickup.wav',
+    gameOver: 'assets/audio/game_over.wav',
+    finalScore: 'assets/audio/final_score.wav',
+    words: {
+      zero: 'assets/audio/words/zero.wav',
+      one: 'assets/audio/words/one.wav',
+      two: 'assets/audio/words/two.wav',
+      three: 'assets/audio/words/three.wav',
+      four: 'assets/audio/words/four.wav',
+      five: 'assets/audio/words/five.wav',
+      six: 'assets/audio/words/six.wav',
+      seven: 'assets/audio/words/seven.wav',
+      eight: 'assets/audio/words/eight.wav',
+      nine: 'assets/audio/words/nine.wav',
+      ten: 'assets/audio/words/ten.wav',
+      eleven: 'assets/audio/words/eleven.wav',
+      twelve: 'assets/audio/words/twelve.wav',
+      thirteen: 'assets/audio/words/thirteen.wav',
+      fourteen: 'assets/audio/words/fourteen.wav',
+      fifteen: 'assets/audio/words/fifteen.wav',
+      sixteen: 'assets/audio/words/sixteen.wav',
+      seventeen: 'assets/audio/words/seventeen.wav',
+      eighteen: 'assets/audio/words/eighteen.wav',
+      nineteen: 'assets/audio/words/nineteen.wav',
+      twenty: 'assets/audio/words/twenty.wav',
+      thirty: 'assets/audio/words/thirty.wav',
+      forty: 'assets/audio/words/forty.wav',
+      fifty: 'assets/audio/words/fifty.wav',
+      sixty: 'assets/audio/words/sixty.wav',
+      seventy: 'assets/audio/words/seventy.wav',
+      eighty: 'assets/audio/words/eighty.wav',
+      ninety: 'assets/audio/words/ninety.wav',
+      hundred: 'assets/audio/words/hundred.wav',
+      thousand: 'assets/audio/words/thousand.wav',
+    },
+  };
+
+  function playUrl(url) {
+    if (!audioCuesEnabled || !url) return Promise.resolve();
+    return new Promise((resolve) => {
+      try {
+        const audio = new Audio(url);
+        audio.addEventListener('ended', resolve, { once: true });
+        audio.addEventListener('error', resolve, { once: true });
+        audio.play().catch(() => resolve());
+      } catch (err) {
+        console.error('Audio play failed:', err);
+        resolve();
       }
-      if (audioContext.state === 'suspended') {
-        audioContext.resume();
-      }
-    } catch (error) {
-      console.error('Audio context failed:', error);
-    }
+    });
   }
 
-  function speak(text) {
-    if (!audioCuesEnabled || !('speechSynthesis' in window)) return false;
-    try {
-      // Prime voices list; some browsers need a getVoices call first
-      window.speechSynthesis.getVoices();
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      window.speechSynthesis.speak(utterance);
-      return true;
-    } catch (error) {
-      console.error('Speech synthesis failed:', error);
-      return false;
+  function playSequence(urls = []) {
+    return urls.reduce((p, url) => p.then(() => playUrl(url)), Promise.resolve());
+  }
+
+  function numberToWords(num) {
+    if (num === 0) return ['zero'];
+    const words = [];
+    const ones = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'];
+    const teens = ['ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'];
+    const tens = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
+
+    const appendUnder100 = (n) => {
+      if (n < 10) { words.push(ones[n]); return; }
+      if (n < 20) { words.push(teens[n - 10]); return; }
+      const t = Math.floor(n / 10);
+      const o = n % 10;
+      words.push(tens[t]);
+      if (o) words.push(ones[o]);
+    };
+
+    const appendUnder1000 = (n) => {
+      const h = Math.floor(n / 100);
+      const rem = n % 100;
+      if (h) {
+        words.push(ones[h]);
+        words.push('hundred');
+      }
+      if (rem) appendUnder100(rem);
+    };
+
+    if (num >= 1000) {
+      const thousands = Math.floor(num / 1000);
+      appendUnder1000(thousands);
+      words.push('thousand');
+      const rem = num % 1000;
+      if (rem) appendUnder1000(rem);
+    } else {
+      appendUnder1000(num);
     }
+
+    return words;
+  }
+
+  function playNumber(num) {
+    const tokens = numberToWords(Math.max(0, Math.floor(num)));
+    const urls = tokens.map((t) => AUDIO_PATHS.words[t]).filter(Boolean);
+    return playSequence(urls);
   }
 
   function playDing() {
-    if (!audioCuesEnabled) return;
-    try {
-      ensureAudioContext();
-      if (!audioContext) return;
-      const osc = audioContext.createOscillator();
-      const gain = audioContext.createGain();
-      osc.type = 'sine';
-      osc.frequency.value = 880;
-      gain.gain.value = 0.15;
-      osc.connect(gain);
-      gain.connect(audioContext.destination);
-      const now = audioContext.currentTime;
-      gain.gain.setValueAtTime(0.15, now);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.18);
-      osc.start(now);
-      osc.stop(now + 0.18);
-    } catch (error) {
-      console.error('Audio ding failed:', error);
-    }
+    playUrl(AUDIO_PATHS.pickup);
   }
 
   function announceBin(key) {
-    const name = BIN_LABELS[key] || key;
-    const spoken = speak(`Switched to ${name} bin`);
-    if (!spoken) {
-      playDing();
-    }
+    const url = AUDIO_PATHS.bins[key];
+    if (url) playUrl(url);
   }
 
   function announceGameEnd(score) {
-    speak(`Game over. Final score ${score}.`);
+    playSequence([AUDIO_PATHS.gameOver, AUDIO_PATHS.finalScore]).then(() => playNumber(score));
   }
 
   let environmentalTips = [];
@@ -150,20 +206,11 @@ import { startGame } from './modules/game.js';
     if (storedPref === 'true') {
       audioCuesEnabled = true;
       ttsToggle.checked = true;
-      ensureAudioContext();
-      speak('Audio cues on');
     }
 
     ttsToggle.addEventListener('change', (e) => {
       audioCuesEnabled = e.target.checked;
       localStorage.setItem('audioCuesEnabled', audioCuesEnabled.toString());
-      if (!audioCuesEnabled && 'speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-      }
-      if (audioCuesEnabled) {
-        ensureAudioContext();
-        speak('Audio cues on');
-      }
     });
   }
 

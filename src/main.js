@@ -69,14 +69,34 @@ import { startGame } from './modules/game.js';
     },
   };
 
-  function playUrl(url) {
+  let currentAudio = null;
+  let playbackToken = 0;
+
+  function stopCurrentAudio() {
+    if (currentAudio) {
+      try {
+        currentAudio.pause();
+        currentAudio.currentTime = 0;
+      } catch (_) {}
+    }
+    currentAudio = null;
+  }
+
+  function playClip(url) {
     if (!audioCuesEnabled || !url) return Promise.resolve();
+    stopCurrentAudio();
+    const token = ++playbackToken;
     return new Promise((resolve) => {
       try {
         const audio = new Audio(url);
-        audio.addEventListener('ended', resolve, { once: true });
-        audio.addEventListener('error', resolve, { once: true });
-        audio.play().catch(() => resolve());
+        currentAudio = audio;
+        const cleanup = () => {
+          if (currentAudio === audio) currentAudio = null;
+          resolve();
+        };
+        audio.addEventListener('ended', cleanup, { once: true });
+        audio.addEventListener('error', cleanup, { once: true });
+        audio.play().catch(cleanup);
       } catch (err) {
         console.error('Audio play failed:', err);
         resolve();
@@ -85,6 +105,30 @@ import { startGame } from './modules/game.js';
   }
 
   function playSequence(urls = []) {
+    if (!audioCuesEnabled) return Promise.resolve();
+    stopCurrentAudio();
+    const token = ++playbackToken;
+
+    const playUrl = (url) => {
+      if (!url || token !== playbackToken) return Promise.resolve();
+      return new Promise((resolve) => {
+        try {
+          const audio = new Audio(url);
+          currentAudio = audio;
+          const cleanup = () => {
+            if (currentAudio === audio) currentAudio = null;
+            resolve();
+          };
+          audio.addEventListener('ended', cleanup, { once: true });
+          audio.addEventListener('error', cleanup, { once: true });
+          audio.play().catch(cleanup);
+        } catch (err) {
+          console.error('Audio play failed:', err);
+          resolve();
+        }
+      });
+    };
+
     return urls.reduce((p, url) => p.then(() => playUrl(url)), Promise.resolve());
   }
 
@@ -134,12 +178,12 @@ import { startGame } from './modules/game.js';
   }
 
   function playDing() {
-    playUrl(AUDIO_PATHS.pickup);
+    playClip(AUDIO_PATHS.pickup);
   }
 
   function announceBin(key) {
     const url = AUDIO_PATHS.bins[key];
-    if (url) playUrl(url);
+    if (url) playClip(url);
   }
 
   function announceGameEnd(score) {

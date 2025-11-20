@@ -9,6 +9,10 @@ import { startGame } from './modules/game.js';
   const startButton = document.getElementById('start-button');
   const gameOverRestartBtn = document.getElementById('game-over-restart');
   const speechBubble = document.getElementById('speech-bubble');
+  const binSwitchButton = document.getElementById('mobile-bin-switch');
+  const mascotCallout = document.getElementById('mascot-callout');
+
+  const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
   let environmentalTips = [];
   let currentTipIndex = 0;
@@ -34,11 +38,15 @@ import { startGame } from './modules/game.js';
     }
   }
 
-  loadEnvironmentalTips();
+  if (isTouchDevice && speechBubble) {
+    speechBubble.style.display = 'none';
+    if (mascotCallout) mascotCallout.style.display = 'none';
+  } else {
+    loadEnvironmentalTips();
+  }
 
   const joystickDirection = { x: 0, y: 0 };
   const joystickZone = document.getElementById('joystick-zone');
-  const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
   if (joystickZone && isTouchDevice) {
     const joystick = nipplejs.create({
@@ -65,6 +73,12 @@ import { startGame } from './modules/game.js';
   startButton.addEventListener('click', async () => {
     startScreen.style.display = 'none';
     const game = await startGame({ canvas, scoreEl, timeEl, joystickDirection });
+
+    if (binSwitchButton && isTouchDevice) {
+      binSwitchButton.style.display = 'flex';
+      binSwitchButton.addEventListener('click', () => game.cycleBin());
+    }
+
     game.run();
     restartBtn.addEventListener('click', () => game.restart());
     gameOverRestartBtn.addEventListener('click', () => game.restart());

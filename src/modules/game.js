@@ -285,13 +285,17 @@ export async function startGame({ canvas, scoreEl, timeEl, joystickDirection }) 
 
   let activeBinIndex = 0;
 
+  function cycleBin() {
+    binMeshes[activeBinIndex].visible = false;
+    activeBinIndex = (activeBinIndex + 1) % binMeshes.length;
+    const activeMesh = binMeshes[activeBinIndex];
+    activeMesh.visible = true;
+    syncBinScales();
+  }
+
   window.addEventListener('keydown', (e) => {
     if (e.key === ' ') {
-      binMeshes[activeBinIndex].visible = false;
-      activeBinIndex = (activeBinIndex + 1) % binMeshes.length;
-      const activeMesh = binMeshes[activeBinIndex];
-      activeMesh.visible = true;
-      syncBinScales();
+      cycleBin();
     }
   });
 
@@ -559,6 +563,7 @@ export async function startGame({ canvas, scoreEl, timeEl, joystickDirection }) 
 
   return {
     run,
-    restart() { window.location.reload(); }
+    restart() { window.location.reload(); },
+    cycleBin,
   };
 }

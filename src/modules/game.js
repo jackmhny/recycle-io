@@ -187,7 +187,9 @@ export async function startGame({
   async function loadCategory(prefix, count=1) {
     const list = [];
     for (let i = 0; i < count; i++) {
-      const t = await loader.tryLoadTex(`assets/tiles/buildings/${prefix}/${prefix}_${i}.png`);
+      const base = `assets/tiles/buildings/${prefix}/${prefix}_${i}.png`;
+      const webp = base.replace(/\.png$/, '.webp');
+      const t = (await loader.tryLoadTex(webp)) || (await loader.tryLoadTex(base));
       if (t) list.push(t);
     }
     return list;

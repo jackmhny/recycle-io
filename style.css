@@ -46,6 +46,9 @@ html, body {
 }
 
 .hud-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   pointer-events: all;
 }
 
@@ -58,6 +61,66 @@ html, body {
   padding: 16px 24px;
   cursor: pointer;
   font-size: 2.5rem;
+}
+
+#accessibility-menu {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+#accessibility-button {
+  border: 5px solid #222;
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 5px 0 #222;
+  font-weight: 800;
+  padding: 12px 16px;
+  cursor: pointer;
+  font-size: 1.2rem;
+}
+
+#accessibility-panel {
+  display: none;
+  position: absolute;
+  top: 110%;
+  right: 0;
+  background: rgba(255, 255, 255, 0.98);
+  border: 4px solid #222;
+  border-radius: 16px;
+  box-shadow: 0 6px 0 rgba(0, 0, 0, 0.25);
+  padding: 14px 16px;
+  width: 260px;
+  color: #1f3f60;
+  text-align: left;
+  gap: 8px;
+  z-index: 15;
+}
+
+#accessibility-panel.open {
+  display: flex;
+  flex-direction: column;
+}
+
+.toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+#tts-toggle {
+  width: 20px;
+  height: 20px;
+}
+
+.accessibility-help {
+  margin: 4px 0 0 0;
+  font-size: 0.95rem;
+  line-height: 1.35;
 }
 
 #tooltip {
@@ -302,6 +365,19 @@ html, body {
     left: 16px;
     right: 16px;
     font-size: 1.6rem;
+  }
+
+  #accessibility-button {
+    padding: 10px 12px;
+    font-size: 1rem;
+    border-width: 4px;
+    border-radius: 12px;
+    box-shadow: 0 4px 0 #222;
+  }
+
+  #accessibility-panel {
+    width: 220px;
+    padding: 12px 14px;
   }
 
   .hud-left {

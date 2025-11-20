@@ -2,7 +2,15 @@ import * as THREE from 'https://unpkg.com/three@0.180.0/build/three.module.js';
 import { TextureLoaderEx, makeFallbackTexture } from './loader.js';
 import { TRASH_CATEGORIES } from './trash-manifest.js';
 
-export async function startGame({ canvas, scoreEl, timeEl, joystickDirection }) {
+export async function startGame({
+  canvas,
+  scoreEl,
+  timeEl,
+  joystickDirection,
+  onBinSwitch = () => {},
+  onCollect = () => {},
+  onGameEnd = () => {},
+}) {
   const WIDTH = window.innerWidth;
   const HEIGHT = window.innerHeight;
 
@@ -291,6 +299,7 @@ export async function startGame({ canvas, scoreEl, timeEl, joystickDirection }) 
     const activeMesh = binMeshes[activeBinIndex];
     activeMesh.visible = true;
     syncBinScales();
+    onBinSwitch(activeMesh.userData.key);
   }
 
   window.addEventListener('keydown', (e) => {
@@ -421,6 +430,7 @@ export async function startGame({ canvas, scoreEl, timeEl, joystickDirection }) 
         const finalScoreEl = document.getElementById('final-score');
         finalScoreEl.textContent = score;
         gameOverScreen.style.display = 'flex';
+        onGameEnd(score);
       }
     }
     updateHUD();
@@ -475,6 +485,7 @@ export async function startGame({ canvas, scoreEl, timeEl, joystickDirection }) 
               syncBinScales();
             }
             score += Math.max(1, Math.round(10 * t.userData.size));
+            onCollect(activeBinKey);
           }
           scene.remove(t);
           trash.splice(i, 1);

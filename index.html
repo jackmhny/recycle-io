@@ -16,6 +16,16 @@
         <div class="hud-line"><span class="label">Score</span><span id="score">0</span></div>
       </div>
       <div class="hud-right">
+        <div id="accessibility-menu">
+          <button id="accessibility-button" type="button" aria-expanded="false" aria-controls="accessibility-panel">Accessibility</button>
+          <div id="accessibility-panel" role="menu" aria-label="Accessibility options">
+            <label for="tts-toggle" class="toggle-row">
+              <input type="checkbox" id="tts-toggle" />
+              <span>Audio cues (TTS + ding)</span>
+            </label>
+            <p class="accessibility-help">Reads bin switches, plays a pickup ding, and announces game over with your score.</p>
+          </div>
+        </div>
         <button id="restart">Restart</button>
       </div>
     </div>
